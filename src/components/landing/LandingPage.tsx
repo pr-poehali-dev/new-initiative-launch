@@ -1,75 +1,46 @@
-import { useEffect, useRef, useState } from 'react'
-import { motion, useScroll, useSpring } from 'framer-motion'
-import Section from './Section'
-import Layout from './Layout'
-import { sections } from './sections'
+import { useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
+import KeyScreen from './KeyScreen'
+import VpnScreen from './VpnScreen'
 
 export default function LandingPage() {
-  const [activeSection, setActiveSection] = useState(0)
-  const containerRef = useRef<HTMLDivElement>(null)
-  const { scrollYProgress } = useScroll({ container: containerRef })
-  const scaleX = useSpring(scrollYProgress, { stiffness: 100, damping: 30, restDelta: 0.001 })
-
-  useEffect(() => {
-    const handleScroll = () => {
-      if (containerRef.current) {
-        const scrollPosition = containerRef.current.scrollTop
-        const windowHeight = window.innerHeight
-        const newActiveSection = Math.floor(scrollPosition / windowHeight)
-        setActiveSection(newActiveSection)
-      }
-    }
-
-    const container = containerRef.current
-    if (container) {
-      container.addEventListener('scroll', handleScroll)
-    }
-
-    return () => {
-      if (container) {
-        container.removeEventListener('scroll', handleScroll)
-      }
-    }
-  }, [])
-
-  const handleNavClick = (index: number) => {
-    if (containerRef.current) {
-      containerRef.current.scrollTo({
-        top: index * window.innerHeight,
-        behavior: 'smooth'
-      })
-    }
-  }
+  const [screen, setScreen] = useState<'key' | 'vpn'>('key')
+  const [vpnKey, setVpnKey] = useState('')
 
   return (
-    <Layout>
-      <nav className="fixed top-0 right-0 h-screen flex flex-col justify-center z-30 p-4">
-        {sections.map((section, index) => (
-          <button
-            key={section.id}
-            className={`w-3 h-3 rounded-full my-2 transition-all ${
-              index === activeSection ? 'bg-white scale-150' : 'bg-gray-600'
-            }`}
-            onClick={() => handleNavClick(index)}
-          />
-        ))}
-      </nav>
-      <motion.div
-        className="fixed top-0 left-0 right-0 h-0.5 bg-white origin-left z-30"
-        style={{ scaleX }}
-      />
-      <div
-        ref={containerRef}
-        className="h-full overflow-y-auto snap-y snap-mandatory"
-      >
-        {sections.map((section, index) => (
-          <Section
-            key={section.id}
-            {...section}
-            isActive={index === activeSection}
-          />
-        ))}
+    <div className="h-screen w-full flex items-center justify-center bg-[#080810] overflow-hidden">
+      {/* Ambient glow background */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] rounded-full bg-[#6C3BFF]/10 blur-[120px]" />
+        <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[400px] h-[300px] rounded-full bg-[#3B82F6]/8 blur-[100px]" />
       </div>
-    </Layout>
+
+      {/* Mobile frame */}
+      <div className="relative w-[390px] h-[844px] rounded-[50px] overflow-hidden shadow-2xl border border-white/10"
+        style={{ boxShadow: '0 0 80px rgba(108,59,255,0.25), 0 40px 80px rgba(0,0,0,0.8)' }}>
+        {/* Status bar */}
+        <div className="absolute top-0 left-0 right-0 z-50 px-8 pt-4 pb-2 flex justify-between items-center">
+          <span className="text-white/60 text-xs font-medium">9:41</span>
+          <div className="w-24 h-6 bg-black rounded-full mx-auto" />
+          <div className="flex items-center gap-1">
+            <span className="text-white/60 text-xs">●●●</span>
+          </div>
+        </div>
+
+        <AnimatePresence mode="wait">
+          {screen === 'key' ? (
+            <KeyScreen
+              key="key"
+              onSubmit={(k) => { setVpnKey(k); setScreen('vpn') }}
+            />
+          ) : (
+            <VpnScreen
+              key="vpn"
+              vpnKey={vpnKey}
+            />
+          )}
+        </AnimatePresence>
+      </div>
+    </div>
   )
 }
